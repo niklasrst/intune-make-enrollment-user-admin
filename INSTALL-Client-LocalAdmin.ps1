@@ -49,9 +49,9 @@ if ($install)
 
             # Match onprem domain user with upn
             if ([regex]::Escape($PUUser) -notmatch [regex]::Escape($currentUser)) {
-                New-LocalGroup -Name ENROLLMENTUSER | Out-Null
-                Add-LocalGroupMember -Group "ENROLLMENTUSER" -Member $PUUSer
-                $TranslatedPUUser = (Get-LocalGroupMember -Group "ENROLLMENTUSER").Name
+                New-LocalGroup -Name ADMTEST | Out-Null
+                Add-LocalGroupMember -Group "ADMTEST" -Member "azuread\$PUUser" | Out-Null
+                $TranslatedPUUser = (Get-LocalGroupMember -Group "ADMTEST").Name
 
                 Write-Host "$PUUser is translated to $TranslatedPUUser"
 
@@ -79,21 +79,21 @@ if ($install)
             }
             
             #Add enrollment user to local admin group if current user is matching
-            if (Test-LocalGroupMember -GroupName "ENROLLMENTUSER" -UserName $currentUser) {
-                Write-Host "$currentUser is matching with $PUUSer and in ENROLLMENTUSER Group."
+            if (Test-LocalGroupMember -GroupName "ADMTEST" -UserName $PUUser) {
+                Write-Host "$currentUser is matching with $PUUSer and in ADMTEST Group."
 
                 if (Test-LocalGroupMember -GroupName "Administrators" -UserName $currentUser) {
                     Write-Host "$currentUser is already in Administrators group."
                     exit 0
                 } else {
                     Write-Host "Adding $PUUSer to Administrators group."
-                    Add-LocalGroupMember -Group "Administrators" -Member $PUUSer
+                    Add-LocalGroupMember -Group "ADMTEST" -Member "azuread\$PUUser" | Out-Null
                     exit 0
                 }
-                Remove-LocalGroup -Name "ENROLLMENTUSER"
+                Remove-LocalGroup -Name "ADMTEST"
             } else {
                 Write-Host "$currentUser is not matching with $PUUSer. Exiting."
-                Remove-LocalGroup -Name "ENROLLMENTUSER"
+                Remove-LocalGroup -Name "ADMTEST"
                 exit 1
             }
         } 
@@ -129,10 +129,10 @@ if ($uninstall)
 
             # Match onprem domain user with upn
             if ([regex]::Escape($PUUser) -notmatch [regex]::Escape($currentUser)) {
-                New-LocalGroup -Name ENROLLMENTUSER | Out-Null
-                Add-LocalGroupMember -Group "ENROLLMENTUSER" -Member $PUUSer
-                $TranslatedPUUser = (Get-LocalGroupMember -Group "ENROLLMENTUSER").Name
-                Remove-LocalGroup -Name "ENROLLMENTUSER"
+                New-LocalGroup -Name ADMTEST | Out-Null
+                Add-LocalGroupMember -Group "ADMTEST" -Member "azuread\$PUUser" | Out-Null
+                $TranslatedPUUser = (Get-LocalGroupMember -Group "ADMTEST").Name
+                Remove-LocalGroup -Name "ADMTEST"
 
                 Write-Host "$PUUser is translated to $TranslatedPUUser"
                 Write-Host "Removing $TranslatedPUUser from Administrators group."

@@ -16,10 +16,10 @@ if (([regex]::Escape($PUUser) -like "fooUser@*") -and ((Get-WmiObject -Class Win
 
 # Match onprem domain user with upn
 if ([regex]::Escape($PUUser) -notmatch [regex]::Escape($currentUser)) {
-    New-LocalGroup -Name ENROLLMENTUSER | Out-Null
-    Add-LocalGroupMember -Group "ENROLLMENTUSER" -Member $PUUSer
-    $TranslatedPUUser = (Get-LocalGroupMember -Group "ENROLLMENTUSER").Name
-    Remove-LocalGroup -Name "ENROLLMENTUSER"
+    New-LocalGroup -Name ADMTEST | Out-Null
+    Add-LocalGroupMember -Group "ADMTEST" -Member "azuread\$PUUser" | Out-Null
+    $TranslatedPUUser = (Get-LocalGroupMember -Group "ADMTEST").Name
+    Remove-LocalGroup -Name "ADMTEST"
 
     Write-Host "$PUUser is translated to $TranslatedPUUser"
 

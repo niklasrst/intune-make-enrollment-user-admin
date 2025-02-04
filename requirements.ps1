@@ -2,25 +2,33 @@
 $regPath = "HKLM:\SYSTEM\CurrentControlSet\Control\CloudDomainJoin\JoinInfo"
 $JoinInfoPath = (Get-ChildItem -Path $regPath).Name
 $JoinID = Split-Path $JoinInfoPath -Leaf
+##Write-Host "Join ID: $JoinID"
 
 #Get Enrolloment UPN
 $PUUser = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\CloudDomainJoin\JoinInfo\$JoinID" -Name UserEmail).UserEmail
 $currentUser = (Get-Process -IncludeUserName -Name explorer | Select-Object UserName -Unique).UserName
+##Write-Host "Enrollment User: $PUUSer"
+##Write-Host "Current User: $currentUser"
 
 #If on W365 and PUUSer is "fooUser@*" then set PUUser to current user
 if (([regex]::Escape($PUUser) -like "fooUser@*") -and ((Get-WmiObject -Class Win32_ComputerSystem).Name -like "CPC*")) {
+    ##Write-Host "Running on W365. PUUser cannot match. Setting PUUser to current user."
     $PUUser = $currentUser
+    ##Write-Host "Setting PUUser to $PUUser"
 }
 
 # Match onprem domain user with upn
 if ([regex]::Escape($PUUser) -notmatch [regex]::Escape($currentUser)) {
-    New-LocalGroup -Name "ENROLLMENTUSER" | Out-Null
-    Add-LocalGroupMember -Group "ENROLLMENTUSER" -Member "$PUUser" | Out-Null
-    $TranslatedPUUser = (Get-LocalGroupMember -Group "ENROLLMENTUSER").Name
+    New-LocalGroup -Name "ADMTEST" | Out-Null
+    Add-LocalGroupMember -Group "ADMTEST" -Member "azuread\$PUUser" | Out-Null
+    $TranslatedPUUser = (Get-LocalGroupMember -Group "ADMTEST").Name
+
+    ##Write-Host "PU $PUUser is translated to $TranslatedPUUser"
 
     if ($TranslatedPUUser -eq $currentUser) {
         $PUUser = $TranslatedPUUser
     } else {
+        ##Write-Host "ERROR PU UPN not matching CU UPN."
     }
 }
 
@@ -41,12 +49,14 @@ function Test-LocalGroupMember {
 }
 
 #Add enrollment user to local admin group if current user is matching
-if (Test-LocalGroupMember -GroupName "ENROLLMENTUSER" -UserName "$currentUser") {
-    Remove-LocalGroup -Name "ENROLLMENTUSER" | Out-Null
+if (Test-LocalGroupMember -GroupName "ADMTEST" -UserName $PUUser) {
+    #Write-Host "$currentUser is matching with $PUUSer. (Script OK to run)"
+    Remove-LocalGroup -Name "ADMTEST" | Out-Null
     Write-Host "OK"
     exit 0
 } else {
-    Remove-LocalGroup -Name "ENROLLMENTUSER" | Out-Null
+    #Write-Host "$currentUser is not matching with $PUUSer. (Script NOK to run)"
+    Remove-LocalGroup -Name "ADMTEST" | Out-Null
     Write-Host "NOK"
     exit 1
 }
