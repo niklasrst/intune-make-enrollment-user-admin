@@ -2,15 +2,24 @@
 $regPath = "HKLM:\SYSTEM\CurrentControlSet\Control\CloudDomainJoin\JoinInfo"
 $JoinInfoPath = (Get-ChildItem -Path $regPath).Name
 $JoinID = Split-Path $JoinInfoPath -Leaf
-Write-Host "Join ID: $JoinID"
+##Write-Host "Join ID: $JoinID"
 
 #Get Enrolloment UPN
 $PUUser = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\CloudDomainJoin\JoinInfo\$JoinID" -Name UserEmail).UserEmail
 $currentUser = (Get-Process -IncludeUserName -Name explorer | Select-Object UserName -Unique).UserName
 
+#Get admin group name
+$sysLang = (Get-WinSystemLocale).Name
+$adminGroup = "Administrators"
+if ($sysLang -eq "de-DE") {
+    $adminGroup = "Administratoren"
+} else {
+    $adminGroup = "Administrators"
+}
+
 #If on W365 and PUUSer is "fooUser@*" then set PUUser to current user
 if (([regex]::Escape($PUUser) -like "fooUser@*") -and ((Get-WmiObject -Class Win32_ComputerSystem).Name -like "CPC*")) {
-    Write-Host "Running on W365. PUUser cannot match. Setting PUUser to current user."
+   ##Write-Host "Running on W365. PUUser cannot match. Setting PUUser to current user."
     $PUUser = $currentUser
 }
 
@@ -21,12 +30,12 @@ if ([regex]::Escape($PUUser) -notmatch [regex]::Escape($currentUser)) {
     $TranslatedPUUser = (Get-LocalGroupMember -Group "ADMTEST").Name
     Remove-LocalGroup -Name "ADMTEST"
 
-    Write-Host "$PUUser is translated to $TranslatedPUUser"
+    ##Write-Host "$PUUser is translated to $TranslatedPUUser"
 
     if ($TranslatedPUUser -eq $currentUser) {
         $PUUser = $TranslatedPUUser
     } else {
-        Write-Host "ERROR PU UPN not matching CU UPN."
+        ##Write-Host "ERROR PU UPN not matching CU UPN."
     }
 }
 
@@ -47,10 +56,10 @@ function Test-LocalGroupMember {
 }
 
 #Add enrollment user to local admin group if current user is matching
-if (Test-LocalGroupMember -GroupName "Administrators" -UserName $PUUser) {
-    Write-Host "$PUUser is in Administrators group"
+if (Test-LocalGroupMember -GroupName $adminGroup -UserName $PUUser) {
+    Write-Host "$PUUser is in $adminGroup group"
     exit 0
 } else {
-    Write-Host "ERROR. $PUUser is not in Administrators group"
+    Write-Host "$PUUser is not in $adminGroup group"
     exit 1
 }
