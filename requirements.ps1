@@ -8,12 +8,12 @@ $PUUser = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\CloudD
 $PUUserSid = ""
 if ([regex]::Escape($PUUser) -like "fooUser@*") {
     $PUUser = (Get-Process -IncludeUserName -Name explorer | Select-Object UserName -Unique).UserName
-    if ($PUUser -like "DOMAIN\*") {
+    if ($PUUser -like "*\*") {
         $PUUser = $PUUser.Substring(4)
     } else {
         $PUUser = $PUUser -replace '^.*\\', ''
     }
-    $PUUserSid = (New-Object System.Security.Principal.NTAccount("DOMAIN\$PUUser")).Translate([System.Security.Principal.SecurityIdentifier]).Value
+    $PUUserSid = (New-Object System.Security.Principal.NTAccount("*\$PUUser")).Translate([System.Security.Principal.SecurityIdentifier]).Value
 } else {
     $PUUserSid = (New-Object System.Security.Principal.NTAccount("azuread\$PUUser")).Translate([System.Security.Principal.SecurityIdentifier]).Value
 }
