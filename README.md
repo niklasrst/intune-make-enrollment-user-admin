@@ -2,6 +2,8 @@
 
 This script can be deployed through Microsoft Intune to an Windows device to make the enrollment user a local administrator on the device. Similar to the option in Windows Autopilot but with this you can change the user level anytime later in the same way.
 
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/niklasrst/intune-make-enrollment-user-admin/total)
+
 ## Prerequisites
 
 - Microsoft Intune
